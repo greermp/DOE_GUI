@@ -79,9 +79,12 @@ server <- shinyServer(function(input, output) {
             return(df)
         }
         else if (input$doeType == "Box-Behnken"){
-            n = as.integer(input$numFactors)
+            doe=NULL
+            if (! is.null(input$bbcenter)){
+                n = as.integer(input$numFactors)
+                doe <- bbd(n, input$bbcenter)
+            }
             
-            doe <- bbd(n, input$bbcenter)
             if (is.null(doe))
                 return(NULL)
             df <- data.frame(doe)
@@ -133,8 +136,8 @@ server <- shinyServer(function(input, output) {
         dfz <- df_products_upload()
         if (! is.null(dfz)){
             colnames(dfz) <- paste('Factor', colnames(dfz),  sep='_') 
-            DT::datatable( dfz, editable = TRUE, 
-            options = list(pageLength = 100,buttons = c('copy', 'csv'), 
+            DT::datatable( dfz, editable = TRUE,  extensions = "Buttons",
+            options = list(pageLength = 100,buttons = c('copy', 'csv'),
                 initComplete = JS(
                     "function(settings, json) {",
                     "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",

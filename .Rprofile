@@ -1,6 +1,8 @@
 # This file configures the virtualenv and Python paths differently depending on
 # the environment the app is running in (local vs remote server).
 
+# TY https://github.com/ranikay/shiny-reticulate-app/blob/master/.Rprofile
+
 # Edit this name if desired when starting a new app
 VIRTUALENV_NAME = 'doeEnv'
 
