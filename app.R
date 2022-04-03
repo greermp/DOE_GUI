@@ -1,7 +1,8 @@
 library(shiny)
 library(DT)
 library(reticulate)
-
+library(dplyr)
+library(tibble)
 
 
 reticulate::virtualenv_create(envname="doeEnv", packages=c("pyDOE2", "numpy"))
@@ -29,7 +30,7 @@ ui <- shinyUI(fluidPage(
         ),
     # uiOutput('colnames'),
     actionButton("save", "Save", width = 200),
-    
+    uiOutput("Dynamic"),
     dataTableOutput("sample_table")
 )
 )
@@ -136,6 +137,16 @@ server <- shinyServer(function(input, output) {
         dfz <- df_products_upload()
         if (! is.null(dfz)){
             colnames(dfz) <- paste('Factor', colnames(dfz),  sep='_') 
+            
+            
+            # dfz <- rownames_to_column(dfz, var="Cases")
+            
+            #TODO: Convert to loop
+            colnames(dfz)[1] <- input$Factor1
+            colnames(dfz)[2] <- input$Factor2
+            colnames(dfz)[3] <- input$Factor3
+
+            
             DT::datatable( dfz, editable = TRUE,  extensions = "Buttons",
             options = list(pageLength = 100,buttons = c('copy', 'csv'),
                 initComplete = JS(
@@ -146,6 +157,16 @@ server <- shinyServer(function(input, output) {
         }
     })
     
+    
+    output$Dynamic <- renderUI({
+        LL <- vector("list",as.integer(input$numFactors))   
+        dfz <- df_products_upload()
+        for(i in 1:as.integer(input$numFactors)){
+            # LL[[i]] <- list(radioButtons(inputId = paste0("Factor",i), label = paste0("Factor",i), choices = c("A","B","C")))
+            LL[[i]] <- list(column(width=(floor(12/input$numFactors)),textInput(inputId = paste0("Factor",i), label = paste0("Factor",i, " Name"), value = colnames(dfz)[i] )))
+        }      
+        return(LL)                     
+    })
     
 
     observeEvent(input$save,{
