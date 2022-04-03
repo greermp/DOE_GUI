@@ -2,7 +2,11 @@ library(shiny)
 library(DT)
 library(reticulate)
 
+
+
+reticulate::virtualenv_create(envname="doeEnv", packages=c("pyDOE2", "numpy"))
 source_python('DoeMaker.py')
+
 
 # Define UI
 ui <- shinyUI(fluidPage(
@@ -16,7 +20,9 @@ ui <- shinyUI(fluidPage(
         radioButtons('doeType', 'Choose a DOE type',choices = c("2 level Full Factorial",
                                                                 "2 level Fractional Factorial",
                                                                 "Plackett-Burman",
-                                                                "Central Composite Design"), 
+                                                                "Central Composite Design",
+                                                                "Box-Behnken",
+                                                                "Latin Hypercube"), 
                                 selected="2 level Full Factorial")),
         #call the inputs based on the results of the if statment from the user selection
         column(6,uiOutput("ui"))
@@ -72,6 +78,16 @@ server <- shinyServer(function(input, output) {
             rownames(df) <- paste0("Case",seq(nrow(df)))
             return(df)
         }
+        else if (input$doeType == "Box-Behnken"){
+            n = as.integer(input$numFactors)
+            
+            doe <- bbd(n, input$bbcenter)
+            if (is.null(doe))
+                return(NULL)
+            df <- data.frame(doe)
+            rownames(df) <- paste0("Case",seq(nrow(df)))
+            return(df)
+        }
         else if (input$doeType == "Plackett-Burman"){
             doe <- pbd(as.integer(input$numFactors))
             if (is.null(doe))
@@ -80,8 +96,33 @@ server <- shinyServer(function(input, output) {
             rownames(df) <- paste0("Case",seq(nrow(df)))
             return(df)
         }
+        else if (input$doeType == "Latin Hypercube"){
+            n = as.integer(input$numFactors)
+            print (n)
+            doe=NULL
+            if(is.null(input$criterion)){
+                # criterion = "random"
+                return(NULL)
+            }
+            else if (input$criterion == "Center within the sampling intervals"){
+                criterion = "c"
+            }else if (input$criterion == "Maximize minimum distance between points"){
+                criterion = "m"
+            }else if (input$criterion =="Minimize maximum correlation coefficient"){
+                criterion = "cm"
+            }else{
+                criterion = "random"
+            }
+
+            doe <- lhc(as.integer(input$numFactors),as.numeric(input$samples), criterion)
+            if (is.null(doe))
+                return(NULL)
+            df <- data.frame(doe)
+            rownames(df) <- paste0("Case",seq(nrow(df)))
+            return(df)
+        }
         else{
-            print("hi")
+            print("Latin Hypercube")
         }
 
         
@@ -124,17 +165,38 @@ server <- shinyServer(function(input, output) {
         }
         else if (input$doeType == "Central Composite Design"){
             
-            input_selections <- list(numericInput("CPFB", "# Center Points (Factorial Block)", 
-                                                  value = 1, ),
-                                     numericInput("CPSB", "# Center Points (Star Block)", 
-                                                  value = 1),
-                                     radioButtons("Alpha", "Alpha:  ",
-                                                  choices = c("Orthogonal",
-                                                              "Rotatable")),
-                                     radioButtons('Face', 'Spar Point Location',
+            input_selections <- list(fluidRow(
+                                        column(6,numericInput("CPFB", "# Center Points (Factorial Block)", 
+                                                  value = 1, )),
+                                        column(6,radioButtons("Alpha", "Alpha:  ",
+                                                              choices = c("Orthogonal",
+                                                                          "Rotatable")))),
+                                     fluidRow(
+                                         column(6, numericInput("CPSB", "# Center Points (Star Block)", 
+                                                                value = 1)),
+                                         column(6, radioButtons('Face', 'Spar Point Location',
                                                   choices = c("Circumscribed (CCC)",
                                                                "Inscribed (CCI)",
-                                                               "Faced (CCF)")) 
+                                                               "Faced (CCF)")))) 
+            )
+            
+        }
+        else if (input$doeType == "Box-Behnken"){
+            
+            input_selections <- list(numericInput("bbcenter", "# Center Points", 
+                                                  value = 1 )
+            )
+            
+        }
+        else if (input$doeType == "Latin Hypercube"){
+            
+            input_selections <- list(numericInput("samples", "Sample points per factor:", 
+                                                  value = as.integer(input$numFactors)),
+                                     radioButtons('criterion', 'Choose how to sample the points:',
+                                                  choices = c("Randomize points within the intervals",
+                                                              "Center within the sampling intervals",
+                                                              "Maximize minimum distance between points",
+                                                              "Minimize maximum correlation coefficient"))
             )
             
         }

@@ -1,0 +1,14 @@
+name: DOE_GUI
+title: DOE_GUI
+username:
+account: greermp
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5999255
+bundleId: 5758558
+url: https://greermp.shinyapps.io/DOE_GUI/
+when: 1648952428.0347
+lastSyncTime: 1648952428.0347
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: test.csv

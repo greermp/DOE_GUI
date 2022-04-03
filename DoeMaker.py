@@ -46,10 +46,26 @@ def pbd(n):
 z=pyDOE2.fracfact_by_res(5, 4)
 z=pyDOE2.fracfact("a b c abc")
 
+
+def bbd(n, cp):
+    n = int(n)
+    cp = int(cp) 
+    return pyDOE2.bbdesign(n, cp)
+
+def lhc(n, samples, criterion):
+    n = int(n)
+    samples = int(samples)
+    if criterion == "random":
+        return pyDOE2.lhs(n, samples=samples)
+    return pyDOE2.lhs(n, samples=samples, criterion=criterion)
+
 # print(pyDOE2.fracfact_opt(n_factors=5, n_erased=2, max_attempts=10))
 
 # print(z)
 # print(pyDOE2.fracfact_aliasing(design=z))
+
+
+print(pyDOE2.fullfact([2,4,5]))
 
 pyDOE2.fullfact([2,3,4])
 
