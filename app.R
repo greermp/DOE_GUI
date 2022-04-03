@@ -15,15 +15,14 @@ ui <- shinyUI(fluidPage(
         column(6,
         radioButtons('doeType', 'Choose a DOE type',choices = c("2 level Full Factorial",
                                                                 "2 level Fractional Factorial",
+                                                                "Plackett-Burman",
                                                                 "Central Composite Design"), 
                                 selected="2 level Full Factorial")),
         #call the inputs based on the results of the if statment from the user selection
         column(6,uiOutput("ui"))
         ),
-    fluidRow(
-        column(12, uiOutput('colnames'))
-    ),
-    
+    # uiOutput('colnames'),
+    actionButton("save", "Save", width = 200),
     
     dataTableOutput("sample_table")
 )
@@ -34,7 +33,14 @@ server <- shinyServer(function(input, output) {
     # Fractional Factorial...
     df_products_upload <- reactive({
         if (input$doeType == "2 level Fractional Factorial"){
-            doe <- fracFact(as.character(input$doeString))
+            
+            doe=NULL
+            if (is.null(input$doeString)){
+                doe = NULL
+            }
+            else {
+                doe <- fracFact(as.character(input$doeString))
+            }
 
             if (is.null(doe))
                 return(NULL)
@@ -54,12 +60,20 @@ server <- shinyServer(function(input, output) {
         }
         else if (input$doeType == "Central Composite Design"){
             n = as.integer(input$numFactors)
-
+            print (n)
             doe=NULL
             if (! is.null(input$Alpha)){
                 doe <- ccd(n, input$CPFB, input$CPSB, input$Alpha, input$Face)
             }
             
+            if (is.null(doe))
+                return(NULL)
+            df <- data.frame(doe)
+            rownames(df) <- paste0("Case",seq(nrow(df)))
+            return(df)
+        }
+        else if (input$doeType == "Plackett-Burman"){
+            doe <- pbd(as.integer(input$numFactors))
             if (is.null(doe))
                 return(NULL)
             df <- data.frame(doe)
@@ -75,12 +89,25 @@ server <- shinyServer(function(input, output) {
     
     
     output$sample_table<- DT::renderDataTable({
-        df <- df_products_upload()
-        DT::datatable(df, )
+        dfz <- df_products_upload()
+        if (! is.null(dfz)){
+            colnames(dfz) <- paste('Factor', colnames(dfz),  sep='_') 
+            DT::datatable( dfz, editable = TRUE, 
+            options = list(pageLength = 100,buttons = c('copy', 'csv'), 
+                initComplete = JS(
+                    "function(settings, json) {",
+                    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
+                    "}")
+            ))
+        }
     })
     
-    output$colnames <- renderUI({
-        textInput("test", label = "Test!")
+    
+
+    observeEvent(input$save,{
+        dfz <- df_products_upload()
+        colnames(dfz) <- paste('Factor', colnames(dfz),  sep='_') 
+        write.csv(dfz,'test.csv')
     })
     
     output$ui <- renderUI({
