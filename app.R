@@ -139,14 +139,18 @@ server <- shinyServer(function(input, output) {
             colnames(dfz) <- paste('Factor', colnames(dfz),  sep='_') 
             
             
-            # dfz <- rownames_to_column(dfz, var="Cases")
-            
-            #TODO: Convert to loop
-            colnames(dfz)[1] <- input$Factor1
-            colnames(dfz)[2] <- input$Factor2
-            colnames(dfz)[3] <- input$Factor3
+            for(i in 1:as.integer(input$numFactors)){
+                var=paste0('Factor',i)
+                # colnames(dfz)[i] <- input$Factor1
+                if (is.null(input[[var]])){
+                    colnames(dfz)[i] <- ' '
+                }
+                else{
+                    colnames(dfz)[i] <-input[[var]]
+                }
+                
+            }
 
-            
             DT::datatable( dfz, editable = TRUE,  extensions = "Buttons",
             options = list(pageLength = 100,buttons = c('copy', 'csv'),
                 initComplete = JS(
