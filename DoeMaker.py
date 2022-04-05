@@ -58,19 +58,29 @@ def lhc(n, samples, criterion):
     if criterion == "random":
         return pyDOE2.lhs(n, samples=samples)
     return pyDOE2.lhs(n, samples=samples, criterion=criterion)
+    
+def mlff(aList):
+  # print(pyDOE2.fullfact(aList))
+  print(aList)
+  aList = [int(x) for x in aList] 
+  print(type(aList))
+  print("leaving python")
+  return pyDOE2.fullfact(aList)
+  return "pew"
+  
+# mlff([2.0, 2.0, 2.0])
 
 # print(pyDOE2.fracfact_opt(n_factors=5, n_erased=2, max_attempts=10))
 
 # print(z)
-# print(pyDOE2.fracfact_aliasing(design=z))
+# print(pyDOE2.fracfact_aliasing(design=pyDOE2.fullfact([2,3,4])))
 
-
-print(pyDOE2.fullfact([2,4,5]))
-
-pyDOE2.fullfact([2,3,4])
-
-
-pyDOE2.pbdesign
-# print(pyDOE2.ccdesign(5, [0,0], 'o', face='cci'))
-
+# 
+# print(type(pyDOE2.fullfact([2,4,5])))
+# 
+# pyDOE2.fullfact([2,3,4])
+# 
+# 
+# pyDOE2.pbdesign
+# 
 
