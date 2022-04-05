@@ -218,7 +218,9 @@ server <- shinyServer(function(input, output) {
         LL <- vector("list",numFactors)   
         dfz <- df_products_upload()
         for(i in 1:numFactors){
-            LL[[i]] <- list(column(width=(floor(12/numFactors)),textInput(inputId = paste0("Factor",i), label = paste0("Factor ",i), value = colnames(dfz)[i] )))
+            LL[[i]] <- list(column(width=(ifelse(floor(12/numFactors)<1, 1,floor(12/numFactors))),
+                textInput(inputId = paste0("Factor",i), label = paste0("Factor ",i), 
+                          value = colnames(dfz)[i] )))
         }      
         return(LL)                     
     })
@@ -287,7 +289,7 @@ server <- shinyServer(function(input, output) {
             LL <- vector("list",as.integer(input$numFactors))   
             # dfz <- df_products_upload()
             for(i in 1:as.integer(input$numFactors)){
-                LL[[i]] <- list(column(width=(floor(12/input$numFactors)),
+                LL[[i]] <- list(column(width=(ifelse(floor(12/numFactors)<1, 1,floor(12/numFactors))),
                                        textInput(inputId = paste0("FactorLevels",i), 
                                                  label = paste0("Factor",i, " # of Levels?"), value = 2 )))
             }      
