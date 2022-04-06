@@ -13,7 +13,7 @@ source_python('DoeMaker.py')
 
 # Define UI
 ui <- shinyUI(fluidPage(
-    shinyjs::useShinyjs(),
+    shinyjs::useShinyjs(),# Used to deactivate buttons
     fluidRow(column(6,selectInput('doeType', h3('Choose a DOE type'),
                                   choices = c("Mixed-Level Full Factorial",
                                              "2 level Full Factorial",
@@ -24,7 +24,6 @@ ui <- shinyUI(fluidPage(
                                              "Latin Hypercube"), 
                                   selected="2 level Full Factorial")), 
         column(6, numericInput("numFactors", h3("Number of Factors:"),  value = 3))
-        # column(2,actionButton("save", h5("Save DOE"))),
     ),
     fluidRow(
         #call the inputs based on the results of the if statment from the user selection
@@ -35,7 +34,7 @@ ui <- shinyUI(fluidPage(
         #call the inputs based on the results of the if statment from the user selection
         column(12,uiOutput("Dynamic"))),
     # TODO: fix this
-    dataTableOutput("sample_table")
+    dataTableOutput("doe_table")
 )
 )
 
@@ -169,7 +168,7 @@ server <- shinyServer(function(input, output) {
     })
     
     # Show datatable with DOE
-    output$sample_table<- DT::renderDataTable({
+    output$doe_table<- DT::renderDataTable({
         dfz <- df_products_upload()
         if (! is.null(dfz)){
             # colnames(dfz) <- paste('Factor', colnames(dfz),  sep='_') 
@@ -224,22 +223,7 @@ server <- shinyServer(function(input, output) {
         }      
         return(LL)                     
     })
-    
-    # observeEvent(input$save,{
-    #     dfz <- df_products_upload()
-    #     for(i in 1:as.integer(input$numFactors)){
-    #         var=paste0('Factor',i)
-    #         # colnames(dfz)[i] <- input$Factor1
-    #         if (is.null(input[[var]])){
-    #             colnames(dfz)[i] <- ' '
-    #         }
-    #         else{
-    #             colnames(dfz)[i] <-input[[var]]
-    #         }
-    #         
-    #     }
-    #     write.csv(dfz,'test.csv')
-    # })
+ 
     
     # This updates UI (input options) based on DOE type..
     output$ui <- renderUI({
