@@ -5,7 +5,7 @@ library(dplyr)
 library(tibble)
 library(stringr)
 
-
+# testDf <- read.csv("test.csv")
 # Create virtual conda environment, require pyDOE2 and numpy, source the pyDOE wrapper
 reticulate::virtualenv_create(envname="doeEnv", packages=c("pyDOE2", "numpy"))
 source_python('DoeMaker.py')
@@ -13,8 +13,13 @@ source_python('DoeMaker.py')
 
 # Define UI
 ui <- shinyUI(fluidPage(
-    shinyjs::useShinyjs(),# Used to deactivate buttons
-    fluidRow(column(6,selectInput('doeType', h3('Choose a DOE type'),
+    titlePanel(""),
+    sidebarLayout(position = "left",
+        sidebarPanel(width = 2,
+            
+       
+    
+    fluidRow(selectInput('doeType', h3('Choose a DOE type'),
                                   choices = c("Mixed-Level Full Factorial",
                                              "2 level Full Factorial",
                                              "2 level Fractional Factorial",
@@ -23,25 +28,28 @@ ui <- shinyUI(fluidPage(
                                              "Box-Behnken",
                                              "Latin Hypercube"), 
                                   selected="2 level Full Factorial")), 
-        column(6, numericInput("numFactors", h3("Number of Factors:"),  value = 3))
+    fluidRow(numericInput("numFactors", h3("Number of Factors:"),  value = 3))
     ),
+    mainPanel(#actionButton("toggleSidebar", "Toggle sidebar"),
     fluidRow(
-        #call the inputs based on the results of the if statment from the user selection
-        column(12,uiOutput("ui"))
+        # This updates UI (input options) based on DOE type
+        column(12,uiOutput("dynamicParameters"))
         ),
-    # Render text boxes to allow user to rename columns for DT 
     fluidRow(
-        #call the inputs based on the results of the if statment from the user selection
-        column(12,uiOutput("Dynamic"))),
-    # TODO: fix this
-    dataTableOutput("doe_table")
-)
-)
+        # Render text boxes to allow user to rename columns for DT 
+        column(12,uiOutput("RenameCols")),
+        column(12,uiOutput("codeFactors"))),
+    # TODO: fix this \
+    dataTableOutput("doe_table")))))
 
 # Define server logic
 server <- shinyServer(function(input, output) {
-
-        observeEvent(input$doeType, {
+    observeEvent(input$toggleSidebar, {
+        shinyjs::toggle(id = "Sidebar")
+    })
+    # If Fractional Factorial selected, use user string as input.  
+    #  deactivate numFactors button
+    observeEvent(input$doeType, {
         if(input$doeType <= '2 level Fractional Factorial'){
             shinyjs::disable("numFactors")
         }else{
@@ -49,15 +57,19 @@ server <- shinyServer(function(input, output) {
         }
     })
     
-    # Fractional Factorial...
+    # Returns DF to be rendered as a datatable 
+    # Most logical blocks require null checks on inputs to prevent errors
+    # while client-side input is being populated
     df_products_upload <- reactive({
         if (input$doeType == "Mixed-Level Full Factorial"){
+            if (is.null(input$numFactors))
+                return (NULL)
             
-            doe=NULL
             args = vector(length=as.integer(input$numFactors))   
             for(i in 1:as.integer(as.numeric(input$numFactors))){
                 var=paste0('FactorLevels',i)
                 if (is.null(input[[var]])){
+                    # This is a placeholder while the client input loads.. should not be seen
                     df <- data.frame(ID = c(1, 2, 3, 4, 5),
                                      var1 = c('a', 'b', 'c', 'd', 'e'),
                                      var2 = c(1, 1, 0, 0, 1))
@@ -75,7 +87,6 @@ server <- shinyServer(function(input, output) {
             return(df)
         }
         else if (input$doeType == "2 level Fractional Factorial"){
-            
             doe=NULL
             if (is.null(input$doeString)){
                 doe = NULL
@@ -91,7 +102,6 @@ server <- shinyServer(function(input, output) {
             
             return(df)
         }
-        # Full Factorial...
         else if (input$doeType == "2 level Full Factorial"){
             doe <- ff2n(as.integer(input$numFactors))
             if (is.null(doe))
@@ -115,14 +125,12 @@ server <- shinyServer(function(input, output) {
             return(df)
         }
         else if (input$doeType == "Box-Behnken"){
-            doe=NULL
-            if (! is.null(input$bbcenter)){
-                n = as.integer(input$numFactors)
-                doe <- bbd(n, input$bbcenter)
-            }
-            
             if (is.null(doe))
                 return(NULL)
+            
+            n = as.integer(input$numFactors)
+            doe <- bbd(n, input$bbcenter)
+            
             df <- data.frame(doe)
             rownames(df) <- paste0("Case",seq(nrow(df)))
             return(df)
@@ -140,7 +148,6 @@ server <- shinyServer(function(input, output) {
             print (n)
             doe=NULL
             if(is.null(input$criterion)){
-                # criterion = "random"
                 return(NULL)
             }
             else if (input$criterion == "Center within the sampling intervals"){
@@ -167,31 +174,37 @@ server <- shinyServer(function(input, output) {
         
     })
     
+
+    
     # Show datatable with DOE
     output$doe_table<- DT::renderDataTable({
         dfz <- df_products_upload()
-        if (! is.null(dfz)){
-            # colnames(dfz) <- paste('Factor', colnames(dfz),  sep='_') 
-            
+        
+        
+
+        
+        
+        if (! is.null(dfz)){12
             # Update column names with user input
             if(input$doeType <= '2 level Fractional Factorial'){
-                # numFactors = length(input$doeString)
                 numFactors = str_count(input$doeString, "\\w+")
             }else{
                 numFactors = as.integer(input$numFactors)
             }
-            for(i in 1:numFactors){
-                var=paste0('Factor',i)
-                if (is.null(input[[var]])){
-                    colnames(dfz)[i] <- ' '
+            # This if statement prevents error messages due to processing delay
+            if (numFactors == length(dfz)){
+                for(i in 1:numFactors){
+                    var=paste0('Factor',i)
+                    if (is.null(input[[var]])){
+                        colnames(dfz)[i] <- 'X'
+                    }
+                    else{
+                        colnames(dfz)[i] <-input[[var]]
+                    }
+                    
                 }
-                else{
-                    colnames(dfz)[i] <-input[[var]]
-                }
-                
             }
             
-            # TODO: Make better, figure out buttons
             DT::datatable( dfz, editable = TRUE,  extensions = "Buttons",
             options = list(sDom  = '<"top">lrtB<"bottom">ip', pageLength = 10,buttons = c('csv'),
                            
@@ -205,8 +218,9 @@ server <- shinyServer(function(input, output) {
         }
     })
     
-    # This will currently break if > 12 factors
-    output$Dynamic <- renderUI({
+    # Creates a UI column containing a textInput where user can rename columns (factors)
+    output$RenameCols <- renderUI({
+        # If Frac Factorial, use number of words to calculate length (A B C = 3)
         if(input$doeType <= '2 level Fractional Factorial'){
             numFactors = str_count(input$doeString, "\\w+")
             print(numFactors)
@@ -217,16 +231,21 @@ server <- shinyServer(function(input, output) {
         LL <- vector("list",numFactors)   
         dfz <- df_products_upload()
         for(i in 1:numFactors){
+            # Dynamically sets width based on number of text inputs
             LL[[i]] <- list(column(width=(ifelse(floor(12/numFactors)<1, 1,floor(12/numFactors))),
                 textInput(inputId = paste0("Factor",i), label = paste0("Factor ",i), 
                           value = colnames(dfz)[i] )))
         }      
         return(LL)                     
     })
+    
+    output$codeFactors <- renderUI({
+        return(length(dfz))
+    })
  
     
     # This updates UI (input options) based on DOE type..
-    output$ui <- renderUI({
+    output$dynamicParameters <- renderUI({
         input_selections=NULL
         if (input$doeType == "2 level Fractional Factorial"){
 
@@ -270,10 +289,12 @@ server <- shinyServer(function(input, output) {
                                                               "Minimize maximum correlation coefficient"))
             )
         }else if (input$doeType == "Mixed-Level Full Factorial"){
+            if (is.null(input$numFactors)){
+                return(NULL)
+            }
             LL <- vector("list",as.integer(input$numFactors))   
-            # dfz <- df_products_upload()
             for(i in 1:as.integer(input$numFactors)){
-                LL[[i]] <- list(column(width=(ifelse(floor(12/numFactors)<1, 1,floor(12/numFactors))),
+                LL[[i]] <- list(column(width=(ifelse(floor(12/input$numFactors)<1, 1,floor(12/input$numFactors))),
                                        textInput(inputId = paste0("FactorLevels",i), 
                                                  label = paste0("Factor",i, " # of Levels?"), value = 2 )))
             }      

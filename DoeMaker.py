@@ -1,23 +1,22 @@
 import pyDOE2
 
-# print(pyDOE2.fracfact("a b c abc"))
-
-# pyDOE2.pbdesign()
-
-# pyDOE2.fullfact()
-
+# 2 level Full Factorial
 def ff2n(n):
     n = int(n)
-    # print(n)
     return pyDOE2.ff2n(n)
     
-    
+# 2 Level fractional Factorial, based on input STR
+# Param: doeString: 'A B C', 'A B AB', etc
 def fracFact(doeString):
   doeString = str(doeString)
-  # print(n)
   return pyDOE2.fracfact(doeString)
 
-
+# 2 Central comosite deisgn.  3 or 5 levels.
+# Params:
+#     n: number of factors
+#     CPFB: Center points for factorial block
+#     CPSB: Center points for Star block
+#     Face: How to gereate alpha or 'Star' Points
 def ccd(n, CPFB, CPSB, alpha, face):
   n = int(n)
   if (alpha == "Orthogonal"):
