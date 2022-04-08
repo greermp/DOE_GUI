@@ -19,7 +19,7 @@ ui <- shinyUI(fluidPage(
             
        
     
-    fluidRow(selectInput('doeType', h3('Choose a DOE type'),
+    fluidRow(selectInput('doeType', h3('DOE Type:'),
                                   choices = c("Mixed-Level Full Factorial",
                                              "2 level Full Factorial",
                                              "2 level Fractional Factorial",
@@ -28,7 +28,8 @@ ui <- shinyUI(fluidPage(
                                              "Box-Behnken",
                                              "Latin Hypercube"), 
                                   selected="2 level Full Factorial")), 
-    fluidRow(numericInput("numFactors", h3("Number of Factors:"),  value = 3))
+    fluidRow(numericInput("numFactors", h3("Number of Factors:"),  value = 3)),
+
     ),
     mainPanel(#actionButton("toggleSidebar", "Toggle sidebar"),
     fluidRow(
@@ -39,7 +40,7 @@ ui <- shinyUI(fluidPage(
         # Render text boxes to allow user to rename columns for DT 
         column(12,uiOutput("RenameCols")),
         column(12,uiOutput("codeFactors"))),
-    # TODO: fix this \
+    # TODO: fix this 
     dataTableOutput("doe_table")))))
 
 # Define server logic
@@ -125,8 +126,8 @@ server <- shinyServer(function(input, output) {
             return(df)
         }
         else if (input$doeType == "Box-Behnken"){
-            if (is.null(doe))
-                return(NULL)
+            # if (is.null(doe))
+            #     return(NULL)
             
             n = as.integer(input$numFactors)
             doe <- bbd(n, input$bbcenter)
@@ -174,16 +175,10 @@ server <- shinyServer(function(input, output) {
         
     })
     
-
     
     # Show datatable with DOE
     output$doe_table<- DT::renderDataTable({
         dfz <- df_products_upload()
-        
-        
-
-        
-        
         if (! is.null(dfz)){12
             # Update column names with user input
             if(input$doeType <= '2 level Fractional Factorial'){
@@ -201,15 +196,15 @@ server <- shinyServer(function(input, output) {
                     else{
                         colnames(dfz)[i] <-input[[var]]
                     }
-                    
+
                 }
             }
-            
+
             DT::datatable( dfz, editable = TRUE,  extensions = "Buttons",
-            options = list(sDom  = '<"top">lrtB<"bottom">ip', pageLength = 10,buttons = c('csv'),
-                           
+            options = list(sDom  = '<"top">lrtB<"bottom">ip', pageLength = 25,buttons = c('csv'),
+
                            buttons = c('copy', 'csv', 'excel'),
-                           
+
                 initComplete = JS(
                     "function(settings, json) {",
                     "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
@@ -239,10 +234,6 @@ server <- shinyServer(function(input, output) {
         return(LL)                     
     })
     
-    output$codeFactors <- renderUI({
-        return(length(dfz))
-    })
- 
     
     # This updates UI (input options) based on DOE type..
     output$dynamicParameters <- renderUI({
