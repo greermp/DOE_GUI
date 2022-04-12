@@ -13,24 +13,25 @@ source_python('DoeMaker.py')
 
 # Define UI
 ui <- shinyUI(fluidPage(
+    shinyjs::useShinyjs(),
     titlePanel(""),
     sidebarLayout(position = "left",
         sidebarPanel(width = 2,
             
        
-    
+     fluidRow(uiOutput("NumberRows")),
     fluidRow(selectInput('doeType', h3('DOE Type:'),
-                                  choices = c("Mixed-Level Full Factorial",
-                                             "2 level Full Factorial",
+                                  choices = c("2 level Full Factorial",
                                              "2 level Fractional Factorial",
                                              "Plackett-Burman",
+                                             "Mixed-Level Full Factorial",
                                              "Central Composite Design",
                                              "Box-Behnken",
                                              "Latin Hypercube"), 
                                   selected="2 level Full Factorial")), 
     fluidRow(numericInput("numFactors", h3("Number of Factors:"),  value = 3)),
-    fluidRow(h3(uiOutput("pickacol"))),
-    fluidRow(h3(uiOutput("NumberRows"))),
+    fluidRow(uiOutput("pickacol")),
+    
 
     ),
     mainPanel(#actionButton("toggleSidebar", "Toggle sidebar"),
@@ -47,13 +48,10 @@ ui <- shinyUI(fluidPage(
 
 # Define server logic
 server <- shinyServer(function(input, output) {
-    observeEvent(input$toggleSidebar, {
-        shinyjs::toggle(id = "Sidebar")
-    })
     # If Fractional Factorial selected, use user string as input.  
     #  deactivate numFactors button
     observeEvent(input$doeType, {
-        if(input$doeType <= '2 level Fractional Factorial'){
+        if(input$doeType == '2 level Fractional Factorial'){
             shinyjs::disable("numFactors")
         }else{
             shinyjs::enable("numFactors")
@@ -74,7 +72,7 @@ server <- shinyServer(function(input, output) {
                 var=paste0('FactorLevels',i)
                 if (is.null(input[[var]])){
                     # This is a placeholder while the client input loads.. should not be seen
-                    df <- data.frame(ID = c(1, 2, 3, 4, 5),
+                    doe <- data.frame(ID = c(1, 2, 3, 4, 5),
                                      var1 = c('a', 'b', 'c', 'd', 'e'),
                                      var2 = c(1, 1, 0, 0, 1))
                     # return(df)
@@ -83,11 +81,10 @@ server <- shinyServer(function(input, output) {
                     args[i] <- as.numeric(input[[var]])
                 }
             }
-
-            df <- mlff(args)
+            doe <- mlff(args)
           
-            df <- data.frame(df)
-            rownames(df) <- paste0("Case",seq(nrow(df)))
+            # df <- data.frame(doe)
+            # rownames(df) <- paste0("Case",seq(nrow(df)))
             # return(df)
         }
         else if (input$doeType == "2 level Fractional Factorial"){
@@ -101,8 +98,8 @@ server <- shinyServer(function(input, output) {
 
             if (is.null(doe))
                 return(NULL)
-            df <- data.frame(doe)
-            rownames(df) <- paste0("Case",seq(nrow(df)))
+            # df <- data.frame(doe)
+            # rownames(df) <- paste0("Case",seq(nrow(df)))
             
             # return(df)
         }
@@ -110,13 +107,12 @@ server <- shinyServer(function(input, output) {
             doe <- ff2n(as.integer(input$numFactors))
             if (is.null(doe))
                 return(NULL)
-            df <- data.frame(doe)
-            rownames(df) <- paste0("Case",seq(nrow(df)))
+            # df <- data.frame(doe)
+            # rownames(df) <- paste0("Case",seq(nrow(df)))
             # return(df)
         }
         else if (input$doeType == "Central Composite Design"){
             n = as.integer(input$numFactors)
-            print (n)
             doe=NULL
             if (! is.null(input$Alpha)){
                 doe <- ccd(n, input$CPFB, input$CPSB, input$Alpha, input$Face)
@@ -124,8 +120,8 @@ server <- shinyServer(function(input, output) {
             
             if (is.null(doe))
                 return(NULL)
-            df <- data.frame(doe)
-            rownames(df) <- paste0("Case",seq(nrow(df)))
+            # df <- data.frame(doe)
+            # rownames(df) <- paste0("Case",seq(nrow(df)))
             # return(df)
         }
         else if (input$doeType == "Box-Behnken"){
@@ -135,21 +131,20 @@ server <- shinyServer(function(input, output) {
             n = as.integer(input$numFactors)
             doe <- bbd(n, input$bbcenter)
             
-            df <- data.frame(doe)
-            rownames(df) <- paste0("Case",seq(nrow(df)))
+            # df <- data.frame(doe)
+            # rownames(df) <- paste0("Case",seq(nrow(df)))
             # return(df)
         }
         else if (input$doeType == "Plackett-Burman"){
             doe <- pbd(as.integer(input$numFactors))
             if (is.null(doe))
                 return(NULL)
-            df <- data.frame(doe)
-            rownames(df) <- paste0("Case",seq(nrow(df)))
+            # df <- data.frame(doe)
+            # rownames(df) <- paste0("Case",seq(nrow(df)))
             # return(df)
         }
         else if (input$doeType == "Latin Hypercube"){
             n = as.integer(input$numFactors)
-            print (n)
             doe=NULL
             if(is.null(input$criterion)){
                 return(NULL)
@@ -164,45 +159,42 @@ server <- shinyServer(function(input, output) {
                 criterion = "random"
             }
 
-            doe <- lhc(as.integer(input$numFactors),as.numeric(input$samples), criterion)
+            doe <- lhc(as.integer(input$numFactors),as.numeric(input$samples), 
+                       criterion)
             if (is.null(doe))
                 return(NULL)
-            df <- data.frame(doe)
-            rownames(df) <- paste0("Case",seq(nrow(df)))
+            # df <- data.frame(doe)
+            # rownames(df) <- paste0("Case",seq(nrow(df)))
             # return(df)
         }
         
         
-        # if (! is.null(df)){12
-            # Update column names with user input
-            if(input$doeType <= '2 level Fractional Factorial'){
-                numFactors = str_count(input$doeString, "\\w+")
-            }else{
-                numFactors = as.integer(input$numFactors)
-            }
-        
-            if (is.null(doe))
-                return(NULL)
-        
-        print(df)
-        
-            # This if statement prevents error messages due to processing delay
-            if (numFactors == length(df)){
-                for(i in 1:numFactors){
-                    var=paste0('Factor',i)
-                    if (! is.null(input[[var]])){
-                    #     colnames(df)[i] <- 'X'
-                    # }
-                    # else{
-                        colnames(df)[i] <-input[[var]]
-                    }
-                    
+        df <- data.frame(doe)
+        rownames(df) <- paste0("Case",seq(nrow(df)))
+        if(input$doeType <= '2 level Fractional Factorial'){
+            numFactors = str_count(input$doeString, "\\w+")
+        }else{
+            numFactors = as.integer(input$numFactors)
+        }
+    
+        if (is.null(doe))
+            return(NULL)
+    
+        # This if statement prevents error messages due to processing delay
+        if (numFactors == length(df)){
+            for(i in 1:numFactors){
+                var=paste0('Factor',i)
+                if (! is.null(input[[var]])){
+                #     colnames(df)[i] <- 'X'
+                # }
+                # else{
+                    colnames(df)[i] <-input[[var]]
                 }
+                
             }
+        }
         else{ (print("This aint workin"))}
-            
         print(df)
-        print(colnames(df))
 
         return (df)
     })
@@ -211,30 +203,8 @@ server <- shinyServer(function(input, output) {
     # Show datatable with DOE
     output$doe_table<- DT::renderDataTable({
         dfz <- df_products_upload()
-        # if (! is.null(dfz)){12
-        #     # Update column names with user input
-        #     if(input$doeType <= '2 level Fractional Factorial'){
-        #         numFactors = str_count(input$doeString, "\\w+")
-        #     }else{
-        #         numFactors = as.integer(input$numFactors)
-        #     }
-        #     # This if statement prevents error messages due to processing delay
-        #     if (numFactors == length(dfz)){
-        #         for(i in 1:numFactors){
-        #             var=paste0('Factor',i)
-        #             if (is.null(input[[var]])){
-        #                 colnames(dfz)[i] <- 'X'
-        #             }
-        #             else{
-        #                 colnames(dfz)[i] <-input[[var]]
-        #             }
-        # 
-        #         }
-        #     }
-
-            DT::datatable( dfz, editable = TRUE,  extensions = "Buttons",
-            options = list(sDom  = '<"top">lrtB<"bottom">ip', pageLength = 25,buttons = c('csv'),
-
+        DT::datatable( dfz, editable = TRUE,  extensions = "Buttons",
+            options = list(sDom  = '<"top">lrtB<"bottom">ip', pageLength = 25,
                            buttons = c('copy', 'csv', 'excel'),
 
                 initComplete = JS(
@@ -249,27 +219,18 @@ server <- shinyServer(function(input, output) {
         dfz <- df_products_upload()
         print(nrow(dfz))
         nrowz <- vector("list",1)   
-        nrowz[[1]] = paste0(nrow(dfz), " Design Points")
+        nrowz[[1]] = paste0("Design Points: ",nrow(dfz))
         return (nrowz)
     })
     
     
     output$pickacol <- renderUI({
-        # If Frac Factorial, use number of words to calculate length (A B C = 3)
-        # if(input$doeType <= '2 level Fractional Factorial'){
-        #     numFactors = str_count(input$doeString, "\\w+")
-        #     print(numFactors)
-        # }else{
-        #     numFactors = as.integer(input$numFactors)
-        # }
-        print(input$Factor1)
-        print (colnames(df_products_upload()))
+        # print(input$Factor1)
+        # print (colnames(df_products_upload()))
         
-        input$doeType
+        # input$doeType
         selectInput("aCol", label = "Pick a Col to Code:", 
                     choices = colnames(df_products_upload()) )
-        # }      
-        # return(LL) 
     })
     
     
@@ -278,7 +239,7 @@ server <- shinyServer(function(input, output) {
         # If Frac Factorial, use number of words to calculate length (A B C = 3)
         if(input$doeType <= '2 level Fractional Factorial'){
             numFactors = str_count(input$doeString, "\\w+")
-            print(numFactors)
+            # print(numFactors)
         }else{
             numFactors = as.integer(input$numFactors)
         }
@@ -287,7 +248,8 @@ server <- shinyServer(function(input, output) {
         dfz <- df_products_upload()
         for(i in 1:numFactors){
             # Dynamically sets width based on number of text inputs
-            LL[[i]] <- list(column(width=(ifelse(floor(12/numFactors)<1, 1,floor(12/numFactors))),
+            LL[[i]] <- list(column(width=(ifelse(floor(12/numFactors)<1, 1,
+                                                 floor(12/numFactors))),
                 textInput(inputId = paste0("Factor",i), label = paste0("Factor ",i), 
                           value = colnames(dfz)[i])))
         }      
@@ -300,7 +262,8 @@ server <- shinyServer(function(input, output) {
         input_selections=NULL
         if (input$doeType == "2 level Fractional Factorial"){
 
-            input_selections <- list(textInput("doeString", "Alias Structure", value = 'A B AB')
+            input_selections <- list(textInput("doeString", 
+                                               "Alias Structure", value = 'A B C ABC')
             )
             
         }
