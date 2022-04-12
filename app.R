@@ -29,6 +29,7 @@ ui <- shinyUI(fluidPage(
                                              "Latin Hypercube"), 
                                   selected="2 level Full Factorial")), 
     fluidRow(numericInput("numFactors", h3("Number of Factors:"),  value = 3)),
+    fluidRow(h3(uiOutput("pickacol"))),
     fluidRow(h3(uiOutput("NumberRows"))),
 
     ),
@@ -63,6 +64,7 @@ server <- shinyServer(function(input, output) {
     # Most logical blocks require null checks on inputs to prevent errors
     # while client-side input is being populated
     df_products_upload <- reactive({
+        input$Factor1
         if (input$doeType == "Mixed-Level Full Factorial"){
             if (is.null(input$numFactors))
                 return (NULL)
@@ -75,7 +77,7 @@ server <- shinyServer(function(input, output) {
                     df <- data.frame(ID = c(1, 2, 3, 4, 5),
                                      var1 = c('a', 'b', 'c', 'd', 'e'),
                                      var2 = c(1, 1, 0, 0, 1))
-                    return(df)
+                    # return(df)
                 }
                 else{
                     args[i] <- as.numeric(input[[var]])
@@ -86,7 +88,7 @@ server <- shinyServer(function(input, output) {
           
             df <- data.frame(df)
             rownames(df) <- paste0("Case",seq(nrow(df)))
-            return(df)
+            # return(df)
         }
         else if (input$doeType == "2 level Fractional Factorial"){
             doe=NULL
@@ -102,7 +104,7 @@ server <- shinyServer(function(input, output) {
             df <- data.frame(doe)
             rownames(df) <- paste0("Case",seq(nrow(df)))
             
-            return(df)
+            # return(df)
         }
         else if (input$doeType == "2 level Full Factorial"){
             doe <- ff2n(as.integer(input$numFactors))
@@ -110,7 +112,7 @@ server <- shinyServer(function(input, output) {
                 return(NULL)
             df <- data.frame(doe)
             rownames(df) <- paste0("Case",seq(nrow(df)))
-            return(df)
+            # return(df)
         }
         else if (input$doeType == "Central Composite Design"){
             n = as.integer(input$numFactors)
@@ -124,18 +126,18 @@ server <- shinyServer(function(input, output) {
                 return(NULL)
             df <- data.frame(doe)
             rownames(df) <- paste0("Case",seq(nrow(df)))
-            return(df)
+            # return(df)
         }
         else if (input$doeType == "Box-Behnken"){
-            # if (is.null(doe))
-            #     return(NULL)
+            if (is.null(doe))
+                return(NULL)
             
             n = as.integer(input$numFactors)
             doe <- bbd(n, input$bbcenter)
             
             df <- data.frame(doe)
             rownames(df) <- paste0("Case",seq(nrow(df)))
-            return(df)
+            # return(df)
         }
         else if (input$doeType == "Plackett-Burman"){
             doe <- pbd(as.integer(input$numFactors))
@@ -143,7 +145,7 @@ server <- shinyServer(function(input, output) {
                 return(NULL)
             df <- data.frame(doe)
             rownames(df) <- paste0("Case",seq(nrow(df)))
-            return(df)
+            # return(df)
         }
         else if (input$doeType == "Latin Hypercube"){
             n = as.integer(input$numFactors)
@@ -167,39 +169,68 @@ server <- shinyServer(function(input, output) {
                 return(NULL)
             df <- data.frame(doe)
             rownames(df) <- paste0("Case",seq(nrow(df)))
-            return(df)
+            # return(df)
         }
-        else{
-            print("Latin Hypercube")
-        }
-
         
-    })
-    
-    
-    # Show datatable with DOE
-    output$doe_table<- DT::renderDataTable({
-        dfz <- df_products_upload()
-        if (! is.null(dfz)){12
+        
+        # if (! is.null(df)){12
             # Update column names with user input
             if(input$doeType <= '2 level Fractional Factorial'){
                 numFactors = str_count(input$doeString, "\\w+")
             }else{
                 numFactors = as.integer(input$numFactors)
             }
+        
+            if (is.null(doe))
+                return(NULL)
+        
+        print(df)
+        
             # This if statement prevents error messages due to processing delay
-            if (numFactors == length(dfz)){
+            if (numFactors == length(df)){
                 for(i in 1:numFactors){
                     var=paste0('Factor',i)
-                    if (is.null(input[[var]])){
-                        colnames(dfz)[i] <- 'X'
+                    if (! is.null(input[[var]])){
+                    #     colnames(df)[i] <- 'X'
+                    # }
+                    # else{
+                        colnames(df)[i] <-input[[var]]
                     }
-                    else{
-                        colnames(dfz)[i] <-input[[var]]
-                    }
-
+                    
                 }
             }
+        else{ (print("This aint workin"))}
+            
+        print(df)
+        print(colnames(df))
+
+        return (df)
+    })
+    
+    
+    # Show datatable with DOE
+    output$doe_table<- DT::renderDataTable({
+        dfz <- df_products_upload()
+        # if (! is.null(dfz)){12
+        #     # Update column names with user input
+        #     if(input$doeType <= '2 level Fractional Factorial'){
+        #         numFactors = str_count(input$doeString, "\\w+")
+        #     }else{
+        #         numFactors = as.integer(input$numFactors)
+        #     }
+        #     # This if statement prevents error messages due to processing delay
+        #     if (numFactors == length(dfz)){
+        #         for(i in 1:numFactors){
+        #             var=paste0('Factor',i)
+        #             if (is.null(input[[var]])){
+        #                 colnames(dfz)[i] <- 'X'
+        #             }
+        #             else{
+        #                 colnames(dfz)[i] <-input[[var]]
+        #             }
+        # 
+        #         }
+        #     }
 
             DT::datatable( dfz, editable = TRUE,  extensions = "Buttons",
             options = list(sDom  = '<"top">lrtB<"bottom">ip', pageLength = 25,buttons = c('csv'),
@@ -211,7 +242,7 @@ server <- shinyServer(function(input, output) {
                     "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
                     "}")
             ))
-        }
+        # }
     })
     
     output$NumberRows <- renderUI({
@@ -221,6 +252,26 @@ server <- shinyServer(function(input, output) {
         nrowz[[1]] = paste0(nrow(dfz), " Design Points")
         return (nrowz)
     })
+    
+    
+    output$pickacol <- renderUI({
+        # If Frac Factorial, use number of words to calculate length (A B C = 3)
+        # if(input$doeType <= '2 level Fractional Factorial'){
+        #     numFactors = str_count(input$doeString, "\\w+")
+        #     print(numFactors)
+        # }else{
+        #     numFactors = as.integer(input$numFactors)
+        # }
+        print(input$Factor1)
+        print (colnames(df_products_upload()))
+        
+        input$doeType
+        selectInput("aCol", label = "Pick a Col to Code:", 
+                    choices = colnames(df_products_upload()) )
+        # }      
+        # return(LL) 
+    })
+    
     
     # Creates a UI column containing a textInput where user can rename columns (factors)
     output$RenameCols <- renderUI({
@@ -238,7 +289,7 @@ server <- shinyServer(function(input, output) {
             # Dynamically sets width based on number of text inputs
             LL[[i]] <- list(column(width=(ifelse(floor(12/numFactors)<1, 1,floor(12/numFactors))),
                 textInput(inputId = paste0("Factor",i), label = paste0("Factor ",i), 
-                          value = colnames(dfz)[i] )))
+                          value = colnames(dfz)[i])))
         }      
         return(LL)                     
     })
