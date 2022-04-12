@@ -29,6 +29,7 @@ ui <- shinyUI(fluidPage(
                                              "Latin Hypercube"), 
                                   selected="2 level Full Factorial")), 
     fluidRow(numericInput("numFactors", h3("Number of Factors:"),  value = 3)),
+    fluidRow(h3(uiOutput("NumberRows"))),
 
     ),
     mainPanel(#actionButton("toggleSidebar", "Toggle sidebar"),
@@ -211,6 +212,14 @@ server <- shinyServer(function(input, output) {
                     "}")
             ))
         }
+    })
+    
+    output$NumberRows <- renderUI({
+        dfz <- df_products_upload()
+        print(nrow(dfz))
+        nrowz <- vector("list",1)   
+        nrowz[[1]] = paste0(nrow(dfz), " Design Points")
+        return (nrowz)
     })
     
     # Creates a UI column containing a textInput where user can rename columns (factors)

@@ -1,4 +1,5 @@
 import pyDOE2
+import numpy as np
 
 # 2 level Full Factorial
 def ff2n(n):
@@ -42,8 +43,8 @@ def pbd(n):
     # print(n)
     return pyDOE2.pbdesign(n)
 
-z=pyDOE2.fracfact_by_res(5, 4)
-z=pyDOE2.fracfact("a b c abc")
+# z=pyDOE2.fracfact_by_res(5, 4)
+# z=pyDOE2.fracfact("a b c abc")
 
 
 def bbd(n, cp):
@@ -59,13 +60,9 @@ def lhc(n, samples, criterion):
     return pyDOE2.lhs(n, samples=samples, criterion=criterion)
     
 def mlff(aList):
-  # print(pyDOE2.fullfact(aList))
-  print(aList)
+  # print(aList)
   aList = [int(x) for x in aList] 
-  print(type(aList))
-  print("leaving python")
   return pyDOE2.fullfact(aList)
-  return "pew"
   
 # mlff([2.0, 2.0, 2.0])
 
@@ -81,5 +78,6 @@ def mlff(aList):
 # 
 # 
 # pyDOE2.pbdesign
-# 
-
+# z= np.array(pyDOE2.fracfact_by_res(n=6,res=4))
+# print(type(z))
+# print(pyDOE2.fracfact_by_res(n=11, res=5))
