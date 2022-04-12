@@ -10,16 +10,16 @@ library(stringr)
 reticulate::virtualenv_create(envname="doeEnv", packages=c("pyDOE2", "numpy"))
 source_python('DoeMaker.py')
 
-
 # Define UI
 ui <- shinyUI(fluidPage(
     shinyjs::useShinyjs(),
+    tags$head(
+        tags$style(HTML("hr {border-top: 1px solid #000000;}"))
+    ),
     titlePanel(""),
     sidebarLayout(position = "left",
         sidebarPanel(width = 2,
-            
-       
-     fluidRow(uiOutput("NumberRows")),
+    fluidRow(uiOutput("NumberRows")),
     fluidRow(selectInput('doeType', h3('DOE Type:'),
                                   choices = c("2 level Full Factorial",
                                              "2 level Fractional Factorial",
@@ -30,7 +30,10 @@ ui <- shinyUI(fluidPage(
                                              "Latin Hypercube"), 
                                   selected="2 level Full Factorial")), 
     fluidRow(numericInput("numFactors", h3("Number of Factors:"),  value = 3)),
+    hr(),
     fluidRow(uiOutput("pickacol")),
+    fluidRow(uiOutput("someLevels")),
+    fluidRow(uiOutput("boom"))
     
 
     ),
@@ -72,9 +75,8 @@ server <- shinyServer(function(input, output) {
                 var=paste0('FactorLevels',i)
                 if (is.null(input[[var]])){
                     # This is a placeholder while the client input loads.. should not be seen
-                    doe <- data.frame(ID = c(1, 2, 3, 4, 5),
-                                     var1 = c('a', 'b', 'c', 'd', 'e'),
-                                     var2 = c(1, 1, 0, 0, 1))
+                    doe=NULL
+                    
                     # return(df)
                 }
                 else{
@@ -169,6 +171,11 @@ server <- shinyServer(function(input, output) {
         }
         
         
+        if (is.null(doe))
+            doe <- data.frame(ID = c(1, 2, 3, 4, 5),
+                              var1 = c('a', 'b', 'c', 'd', 'e'),
+                              var2 = c(1, 1, 0, 0, 1))
+        
         df <- data.frame(doe)
         rownames(df) <- paste0("Case",seq(nrow(df)))
         if(input$doeType <= '2 level Fractional Factorial'){
@@ -177,18 +184,25 @@ server <- shinyServer(function(input, output) {
             numFactors = as.integer(input$numFactors)
         }
     
-        if (is.null(doe))
-            return(NULL)
+        
     
         # This if statement prevents error messages due to processing delay
-        if (numFactors == length(df)){
+        if (numFactors == length(df) ){
             for(i in 1:numFactors){
                 var=paste0('Factor',i)
-                if (! is.null(input[[var]])){
-                #     colnames(df)[i] <- 'X'
+                # cname = input[[var]]
+                # print(cname)
+                # if (cname == ""){
+                #     cname=paste0('x',i)
                 # }
-                # else{
-                    colnames(df)[i] <-input[[var]]
+                if (is.null(input[[var]]) ){
+                    colnames(df)[i] <- paste0('X',i)
+                }else{
+                    print("HERE")
+                    if (input[[var]]=="")
+                        colnames(df)[i] <- paste0('X',i)
+                    else
+                        colnames(df)[i] <-input[[var]]
                 }
                 
             }
@@ -222,17 +236,43 @@ server <- shinyServer(function(input, output) {
         nrowz[[1]] = paste0("Design Points: ",nrow(dfz))
         return (nrowz)
     })
-    
-    
+      
     output$pickacol <- renderUI({
-        # print(input$Factor1)
-        # print (colnames(df_products_upload()))
-        
-        # input$doeType
         selectInput("aCol", label = "Pick a Col to Code:", 
                     choices = colnames(df_products_upload()) )
     })
     
+    # observeEvent(input$aCol, {
+    output$someLevels <- renderUI({
+        dfz <- df_products_upload()
+        print(dfz)
+        print((input$aCol))
+        if (! (is.null(input$aCol) | input$aCol== "")){
+            print(input$aCol)
+            z=dfz %>% select(input$aCol) %>% unique() %>% 
+                arrange(as.numeric(input$aCol))
+            print(z)
+            print(nrow(z))
+            num=nrow(z)
+            UncodeThese <- vector("list",num)  
+            for(i in 1:num){
+                cell=dfz %>% select(input$aCol) %>% unique()
+                cell=cell[i,1]
+                UncodeThese[[i]] <- list(textInput(inputId = paste0("Level",i), 
+                                        label = paste0("Level ",i),
+                                        placeholder = cell))
+            } 
+            return(UncodeThese)
+        }
+        return (1)
+    })
+    
+    observeEvent(input$boom, {
+        iris
+        iris[col][iris[col]==input$oldVal] <- as.numeric(input$newVal)
+        print(iris)
+        filteredData(iris)
+    })
     
     # Creates a UI column containing a textInput where user can rename columns (factors)
     output$RenameCols <- renderUI({
