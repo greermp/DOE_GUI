@@ -5,11 +5,10 @@ library(dplyr)
 library(tibble)
 library(stringr)
 
-# testDf <- read.csv("test.csv")
 # Create virtual conda environment, require pyDOE2 and numpy, source the pyDOE wrapper
 reticulate::virtualenv_create(envname="doeEnv", packages=c("pyDOE2", "numpy"))
 source_python('DoeMaker.py')
-testCounter=0
+
 # Define UI
 ui <- shinyUI(fluidPage(
     shinyjs::useShinyjs(),
@@ -33,7 +32,7 @@ ui <- shinyUI(fluidPage(
     hr(),
     fluidRow(uiOutput("pickacol")),
     fluidRow(uiOutput("someLevels")),
-    fluidRow(numericInput("replaceWith","Replace With:",value=999)),
+    fluidRow(textInput("replaceWith","Replace With:",placeholder ='new value')),
     fluidRow(actionButton("boom", label = "Update"))
     
 
@@ -225,6 +224,9 @@ server <- shinyServer(function(input, output) {
         }
         # else{ (print("This aint workin"))}
         # print(df)
+        
+        df <- df %>%
+          mutate(across(everything(), as.character))
         DF$data=df
         # return (df)
     })
@@ -298,13 +300,18 @@ server <- shinyServer(function(input, output) {
     
     observeEvent(input$boom, {
         dfz <- DF$data
+        str(dfz)
+        print("----")
         print(input$aCol)
+        print(input$aLevel)
+        print(input$replaceWith)
+        print("----")
         var=input$aCol
         level=input$Level1
         print(dfz[[sym(var)]])
         dfz <-dfz %>% mutate("{var}" := case_when(
             !! sym(var) == input$aLevel ~ input$replaceWith,
-                            TRUE ~ as.integer(!! sym(var)))
+                            TRUE ~ as.character(!! sym(var)))
         )
         
         # dfz <-dfz %>% mutate("{var}" := case_when(
@@ -319,7 +326,7 @@ server <- shinyServer(function(input, output) {
         #                     !!var==-1 ~ -111
         # ))
         # 
-        print(typeof(dfz[[var]] %>% unique()))
+        # print(typeof(dfz[[var]] %>% unique()))
         # dfz %>% mutate(input$aCol=2)
         print(dfz)
         # print(DF$data)
