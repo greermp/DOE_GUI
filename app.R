@@ -9,7 +9,7 @@ library(stringr)
 # Create virtual conda environment, require pyDOE2 and numpy, source the pyDOE wrapper
 reticulate::virtualenv_create(envname="doeEnv", packages=c("pyDOE2", "numpy"))
 source_python('DoeMaker.py')
-
+testCounter=0
 # Define UI
 ui <- shinyUI(fluidPage(
     shinyjs::useShinyjs(),
@@ -61,10 +61,28 @@ server <- shinyServer(function(input, output) {
         }
     })
     
+    # filteredData <- reactiveVal(df_products_upload)
+    
     # Returns DF to be rendered as a datatable 
     # Most logical blocks require null checks on inputs to prevent errors
     # while client-side input is being populated
+
+    DF <- reactiveValues(data=data.frame(ID = c(1, 2, 3, 4, 5),
+                                                var1 = c('a', 'b', 'c', 'd', 'e'),
+                                                var2 = c(1, 1, 0, 0, 1)))
+    
+    # observe({
+    #     DF$data <- df_products_upload()
+    # })
+    
     df_products_upload <- reactive({
+        # print ("hi")
+        # print(input$boom)
+        # print(testCounter)
+        # if (as.numeric(input$boom) > as.numeric(testCounter)){
+        #     print("You pressed the button")
+        #     testCounter = testCounter+1
+        # }
         input$Factor1
         if (input$doeType == "Mixed-Level Full Factorial"){
             if (is.null(input$numFactors))
@@ -127,9 +145,9 @@ server <- shinyServer(function(input, output) {
             # return(df)
         }
         else if (input$doeType == "Box-Behnken"){
-            if (is.null(doe))
-                return(NULL)
-            
+            # if (is.null(doe))
+            #     return(NULL)
+            # 
             n = as.integer(input$numFactors)
             doe <- bbd(n, input$bbcenter)
             
@@ -165,9 +183,7 @@ server <- shinyServer(function(input, output) {
                        criterion)
             if (is.null(doe))
                 return(NULL)
-            # df <- data.frame(doe)
-            # rownames(df) <- paste0("Case",seq(nrow(df)))
-            # return(df)
+
         }
         
         
@@ -206,16 +222,17 @@ server <- shinyServer(function(input, output) {
                 
             }
         }
-        else{ (print("This aint workin"))}
-        print(df)
-
-        return (df)
+        # else{ (print("This aint workin"))}
+        # print(df)
+        DF$data=df
+        # return (df)
     })
     
     
     # Show datatable with DOE
     output$doe_table<- DT::renderDataTable({
-        dfz <- df_products_upload()
+        # dfz <- df_products_upload()
+        dfz <- DF$data
         DT::datatable( dfz, editable = TRUE,  extensions = "Buttons",
             options = list(sDom  = '<"top">lrtB<"bottom">ip', pageLength = 25,
                            buttons = c('copy', 'csv', 'excel'),
@@ -229,46 +246,72 @@ server <- shinyServer(function(input, output) {
     })
     
     output$NumberRows <- renderUI({
-        dfz <- df_products_upload()
-        print(nrow(dfz))
+        dfz <- DF$data
+        # print(nrow(dfz))
         nrowz <- vector("list",1)   
         nrowz[[1]] = paste0("Design Points: ",nrow(dfz))
         return (nrowz)
     })
       
     output$pickacol <- renderUI({
+        # dfz=DF$data
+        # print(dfz)
         selectInput("aCol", label = "Pick a Col to Code:", 
+                    # choices = colnames(dfz) )
                     choices = colnames(df_products_upload()) )
     })
     
     # observeEvent(input$aCol, {
     output$someLevels <- renderUI({
-        dfz <- df_products_upload()
-        print(dfz)
-        print((input$aCol))
-        if (! (is.null(input$aCol) | input$aCol== "")){
-            print(input$aCol)
-            z=dfz %>% select(input$aCol) %>% unique() %>% 
-                arrange(as.numeric(input$aCol))
-            print(z)
-            print(nrow(z))
-            num=nrow(z)
-            UncodeThese <- vector("list",num)  
-            for(i in 1:num){
-                cell=dfz %>% select(input$aCol) %>% unique()
-                cell=cell[i,1]
-                UncodeThese[[i]] <- list(textInput(inputId = paste0("Level",i), 
-                                        label = paste0("Level ",i),
-                                        placeholder = cell))
-            } 
+        dfz <- DF$data
+        # print(dfz)
+        # print((input$aCol))
+        # if (! (is.null(input$aCol) | input$aCol== "")){
+        if (! is.null(input$aCol)) {
+            if (! input$aCol== "") {
+                # print(input$aCol)
+                z=dfz %>% select(input$aCol) %>% unique() %>% 
+                    arrange(as.numeric(input$aCol))
+                # print(z)
+                # print(nrow(z))
+                num=nrow(z)
+                UncodeThese <- vector("list",num)  
+                for(i in 1:num){
+                    cell=dfz %>% select(input$aCol) %>% unique()
+                    cell=cell[i,1]
+                    UncodeThese[[i]] <- list(textInput(inputId = paste0("Level",i), 
+                                            label = paste0("Level ",i),
+                                            placeholder = cell))
+                } 
             return(UncodeThese)
+            }
+            return (1)
         }
         return (1)
     })
     
     observeEvent(input$boom, {
-        dfz <- df_products_upload()
+        dfz <- DF$data
+        print(input$aCol)
+        var=input$aCol
+        level=input$Level1
+        
+        dfz <-dfz %>% mutate("{var}" := case_when(
+            !! sym(var) == -1 ~ input$Level1)
+        )
+        
+        # dfz <-dfz %>% mutate(!!var := case_when(X1 == -1 ~ -111)
+        #                                         )
+        
+        # dfz <- dfz %>% mutate(!!var := case_when(
+        #                     !!var==1 ~ 111,
+        #                     !!var==-1 ~ -111
+        # ))
+        # 
+        print(typeof(dfz[[var]] %>% unique()))
+        # dfz %>% mutate(input$aCol=2)
         print(dfz)
+        # print(DF$data)
         # iris[col][iris[col]==input$oldVal] <- as.numeric(input$newVal)
         # print(iris)
         # df_products_upload(dfz)
@@ -285,7 +328,7 @@ server <- shinyServer(function(input, output) {
         }
         
         LL <- vector("list",numFactors)   
-        dfz <- df_products_upload()
+        dfz <- DF$data
         for(i in 1:numFactors){
             # Dynamically sets width based on number of text inputs
             LL[[i]] <- list(column(width=(ifelse(floor(12/numFactors)<1, 1,
