@@ -33,7 +33,7 @@ ui <- shinyUI(fluidPage(
     hr(),
     fluidRow(uiOutput("pickacol")),
     fluidRow(uiOutput("someLevels")),
-    fluidRow(uiOutput("boom"))
+    fluidRow(actionButton("boom", label = "Update"))
     
 
     ),
@@ -198,7 +198,6 @@ server <- shinyServer(function(input, output) {
                 if (is.null(input[[var]]) ){
                     colnames(df)[i] <- paste0('X',i)
                 }else{
-                    print("HERE")
                     if (input[[var]]=="")
                         colnames(df)[i] <- paste0('X',i)
                     else
@@ -268,10 +267,11 @@ server <- shinyServer(function(input, output) {
     })
     
     observeEvent(input$boom, {
-        iris
-        iris[col][iris[col]==input$oldVal] <- as.numeric(input$newVal)
-        print(iris)
-        filteredData(iris)
+        dfz <- df_products_upload()
+        print(dfz)
+        # iris[col][iris[col]==input$oldVal] <- as.numeric(input$newVal)
+        # print(iris)
+        # df_products_upload(dfz)
     })
     
     # Creates a UI column containing a textInput where user can rename columns (factors)
