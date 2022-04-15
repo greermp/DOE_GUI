@@ -33,6 +33,7 @@ ui <- shinyUI(fluidPage(
     hr(),
     fluidRow(uiOutput("pickacol")),
     fluidRow(uiOutput("someLevels")),
+    fluidRow(numericInput("replaceWith","Replace With:",value=999)),
     fluidRow(actionButton("boom", label = "Update"))
     
 
@@ -264,30 +265,35 @@ server <- shinyServer(function(input, output) {
     # observeEvent(input$aCol, {
     output$someLevels <- renderUI({
         dfz <- DF$data
-        # print(dfz)
-        # print((input$aCol))
-        # if (! (is.null(input$aCol) | input$aCol== "")){
-        if (! is.null(input$aCol)) {
-            if (! input$aCol== "") {
-                # print(input$aCol)
-                z=dfz %>% select(input$aCol) %>% unique() %>% 
-                    arrange(as.numeric(input$aCol))
-                # print(z)
-                # print(nrow(z))
-                num=nrow(z)
-                UncodeThese <- vector("list",num)  
-                for(i in 1:num){
-                    cell=dfz %>% select(input$aCol) %>% unique()
-                    cell=cell[i,1]
-                    UncodeThese[[i]] <- list(textInput(inputId = paste0("Level",i), 
-                                            label = paste0("Level ",i),
-                                            placeholder = cell))
-                } 
-            return(UncodeThese)
-            }
-            return (1)
-        }
-        return (1)
+        col=input$aCol
+        print(dfz[[col]] %>% unique())
+        
+        x=unique(dfz[[col]]) 
+        print(x)
+        # print(list(x))
+        # print(typeof(x))
+        selectInput("aLevel", label = "Pick a Level to Code:", 
+                    # choices = colnames(dfz) )
+                    choices = x)
+        # 
+        # if (! is.null(input$aCol)) {
+        #     if (! input$aCol== "") {
+        #         z=dfz %>% select(input$aCol) %>% unique() %>% 
+        #             arrange(as.numeric(input$aCol))
+        #         num=nrow(z)
+        #         UncodeThese <- vector("list",num)  
+        #         for(i in 1:num){
+        #             cell=dfz %>% select(input$aCol) %>% unique()
+        #             cell=cell[i,1]
+        #             UncodeThese[[i]] <- list(textInput(inputId = paste0("Level",i), 
+        #                                     label = paste0("Level ",i),
+        #                                     placeholder = cell))
+        #         } 
+        #     return(UncodeThese)
+        #     }
+        #     return (1)
+        # }
+        # return (1)
     })
     
     observeEvent(input$boom, {
@@ -295,11 +301,16 @@ server <- shinyServer(function(input, output) {
         print(input$aCol)
         var=input$aCol
         level=input$Level1
-        
+        print(dfz[[sym(var)]])
         dfz <-dfz %>% mutate("{var}" := case_when(
-            !! sym(var) == -1 ~ input$Level1)
+            !! sym(var) == input$aLevel ~ input$replaceWith,
+                            TRUE ~ as.integer(!! sym(var)))
         )
         
+        # dfz <-dfz %>% mutate("{var}" := case_when(
+        #     !! sym(var) == -1 ~ input$aLevel)
+        # )
+        # 
         # dfz <-dfz %>% mutate(!!var := case_when(X1 == -1 ~ -111)
         #                                         )
         
@@ -315,6 +326,7 @@ server <- shinyServer(function(input, output) {
         # iris[col][iris[col]==input$oldVal] <- as.numeric(input$newVal)
         # print(iris)
         # df_products_upload(dfz)
+        DF$data=dfz
     })
     
     # Creates a UI column containing a textInput where user can rename columns (factors)
